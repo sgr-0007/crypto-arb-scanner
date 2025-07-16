@@ -56,10 +56,13 @@ const DOCS = {
 async function fetchBinance(base, quote) {
   const pair = `${base}${quote === 'USD' ? 'USDT' : quote}`;
   const url = `https://api.binance.com/api/v3/ticker/bookTicker?symbol=${pair}`;
-  const j = await fetch(url).then(r => r.json());
+  const j = await fetch(url, {
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ArbitrageBot/1.0)' }
+  }).then(r => r.json());
+  if (j.code) return { bid: null, ask: null }; // Binance returns error codes in body
   return {
-    bid: parseFloat(j.bidPrice),
-    ask: parseFloat(j.askPrice)
+    bid: j.bidPrice ? parseFloat(j.bidPrice) : null,
+    ask: j.askPrice ? parseFloat(j.askPrice) : null
   };
 }
 
