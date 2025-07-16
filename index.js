@@ -83,7 +83,12 @@ app.get('/functions/cryptoArbitrageScanner', (req, res) => {
 });
 
 app.post('/functions/cryptoArbitrageScanner', async (req, res) => {
-  const { symbol, exchanges } = req.body || {};
+  // Always expect input under the "input" key
+  const { input } = req.body;
+  if (!input) {
+    return res.status(400).send({ error: "Missing input property in request body" });
+  }
+  const { symbol, exchanges } = input;
   if (!symbol || !Array.isArray(exchanges)) {
     return res.status(400).send({ error: "Missing symbol or exchanges array" });
   }
@@ -110,7 +115,8 @@ app.post('/functions/cryptoArbitrageScanner', async (req, res) => {
       maxBid = p.bid; bestSell = ex;
     }
   }
-  res.json({ prices, bestBuy, bestSell });
+  // Return under output key as required by func.live
+  res.json({ output: { prices, bestBuy, bestSell } });
 });
 
 const PORT = process.env.PORT || 3000;
