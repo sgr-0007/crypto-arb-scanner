@@ -18,8 +18,8 @@ const DOCS = {
       exchanges: {
         type: "array",
         items: { type: "string" },
-        description: "List of exchange IDs (binance, kraken)",
-        example: ["binance","kraken"]
+        description: "List of exchange IDs (kraken, bitstamp)",
+        example: ["kraken","bitstamp"]
       }
     },
     required: ["symbol","exchanges"]
@@ -37,35 +37,23 @@ const DOCS = {
           }
         },
         description: "Bid/ask by exchange",
-        example: { "binance": { "bid":60000,"ask":60050 } }
+        example: { "kraken": { "bid":60000,"ask":60050 } }
       },
       bestBuy: {
         type: "string",
         description: "Exchange with lowest ask",
-        example: "kraken"
+        example: "bitstamp"
       },
       bestSell: {
         type: "string",
         description: "Exchange with highest bid",
-        example: "binance"
+        example: "kraken"
       }
     }
   }
 };
 
-async function fetchBinance(base, quote) {
-  const pair = `${base}${quote === 'USD' ? 'USDT' : quote}`;
-  const url = `https://api.binance.com/api/v3/ticker/bookTicker?symbol=${pair}`;
-  const j = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ArbitrageBot/1.0)' }
-  }).then(r => r.json());
-  if (j.code) return { bid: null, ask: null }; // Binance returns error codes in body
-  return {
-    bid: j.bidPrice ? parseFloat(j.bidPrice) : null,
-    ask: j.askPrice ? parseFloat(j.askPrice) : null
-  };
-}
-
+// Helper to fetch ticker from Kraken
 async function fetchKraken(base, quote) {
   const mappedBase = (base === "BTC" ? "XBT" : base);
   const pair = `${mappedBase}${quote}`;
@@ -75,6 +63,18 @@ async function fetchKraken(base, quote) {
   return {
     bid: parseFloat(j.result[key].b[0]),
     ask: parseFloat(j.result[key].a[0])
+  };
+}
+
+// Helper to fetch ticker from Bitstamp
+async function fetchBitstamp(base, quote) {
+  // Bitstamp uses lowercase pair, e.g. btcusd
+  const pair = `${base}${quote}`.toLowerCase();
+  const url = `https://www.bitstamp.net/api/v2/ticker/${pair}/`;
+  const j = await fetch(url).then(r => r.json());
+  return {
+    bid: parseFloat(j.bid),
+    ask: parseFloat(j.ask)
   };
 }
 
@@ -92,8 +92,8 @@ app.post('/functions/cryptoArbitrageScanner', async (req, res) => {
   await Promise.all(exchanges.map(async ex => {
     try {
       let p;
-      if (ex === 'binance')   p = await fetchBinance(base, quote);
-      else if (ex === 'kraken')   p = await fetchKraken(base, quote);
+      if (ex === 'kraken')   p = await fetchKraken(base, quote);
+      else if (ex === 'bitstamp') p = await fetchBitstamp(base, quote);
       else throw new Error(`Unsupported exchange: ${ex}`);
       prices[ex] = p;
     } catch (e) {
