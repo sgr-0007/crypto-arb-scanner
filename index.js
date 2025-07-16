@@ -37,17 +37,20 @@ const DOCS = {
           }
         },
         description: "Bid/ask by exchange",
-        example: { "kraken": { "bid":60000,"ask":60050 } }
+        example: {
+          "kraken": { "bid": 60000, "ask": 60050 },
+          "bitstamp": { "bid": 60020, "ask": 60055 }
+        }
       },
       bestBuy: {
         type: "string",
         description: "Exchange with lowest ask",
-        example: "bitstamp"
+        example: "kraken"
       },
       bestSell: {
         type: "string",
         description: "Exchange with highest bid",
-        example: "kraken"
+        example: "bitstamp"
       }
     }
   }
